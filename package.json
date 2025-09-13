@@ -1,0 +1,16 @@
+{
+  "name": "esp32-proxy",
+  "version": "1.0.0",
+  "description": "Vercel proxy server for ESP32 communication",
+  "main": "api/esp32.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  },
+  "devDependencies": {
+    "vercel": "^28.0.0"
+  }
+}

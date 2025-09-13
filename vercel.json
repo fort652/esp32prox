@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "api/esp32.js": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/esp32/(.*)",
+      "destination": "/api/esp32?endpoint=/$1"
+    }
+  ]
+}
