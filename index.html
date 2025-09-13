@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Proxy Service</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            color: #2d3748;
+            margin-bottom: 1rem;
+            font-size: 2.5rem;
+            text-align: center;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+        
+        h2 {
+            color: #4a5568;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        
+        .status.online {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .status.offline {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        
+        .endpoint {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .method {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+        
+        .method.get {
+            background: #bee3f8;
+            color: #2a69ac;
+        }
+        
+        .method.post {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .method.put {
+            background: #faf089;
+            color: #744210;
+        }
+        
+        .method.delete {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        
+        .test-section {
+            background: #edf2f7;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .test-button {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+            transition: background 0.2s;
+        }
+        
+        .test-button:hover {
+            background: #3182ce;
+        }
+        
+        .test-button:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+        }
+        
+        .response {
+            background: #1a202c;
+            color: #e2e8f0;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .info-item {
+            background: #f7fafc;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 0.5rem;
+        }
+        
+        .info-value {
+            color: #2d3748;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+        
+        .footer {
+            text-align: center;
+            color: #718096;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🔌 ESP32 Proxy Service</h1>
+            <p class="subtitle">Secure proxy server for ESP32 communication via HTTPS</p>
+            
+            <div class="status" id="status">Checking connection...</div>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">ESP32 IP</div>
+                    <div class="info-value" id="esp32-ip">192.168.0.165</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">ESP32 Port</div>
+                    <div class="info-value">80</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Proxy Status</div>
+                    <div class="info-value" id="proxy-status">Active</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>📡 Available Endpoints</h2>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <strong>/api/esp32/status</strong>
+                <p>Check ESP32 device status and connectivity</p>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <strong>/api/esp32/home-lights</strong>
+                <p>Control home lighting system</p>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <strong>/api/esp32/sensors</strong>
+                <p>Read sensor data from ESP32</p>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method post">POST</span>
+                <strong>/api/esp32/relay</strong>
+                <p>Control relay switches</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>🧪 Test Connection</h2>
+            <p>Test the proxy connection to your ESP32 device:</p>
+            
+            <div class="test-section">
+                <button class="test-button" onclick="testConnection('status')">Test Status</button>
+                <button class="test-button" onclick="testConnection('sensors')">Test Sensors</button>
+                <button class="test-button" onclick="testConnection('home-lights', 'POST', {state: true})">Test Lights ON</button>
+                <button class="test-button" onclick="testConnection('home-lights', 'POST', {state: false})">Test Lights OFF</button>
+            </div>
+            
+            <div id="response" class="response" style="display: none;"></div>
+        </div>
+        
+        <div class="card">
+            <h2>🔧 Configuration</h2>
+            <p>To use this proxy in your React Native app, update your configuration:</p>
+            
+            <div class="endpoint">
+                <strong>Config.ts</strong><br>
+                <code>
+                export const ESP32_CONFIG = {<br>
+                &nbsp;&nbsp;PROXY_URL: 'https://esp32prox.vercel.app/api/esp32',<br>
+                &nbsp;&nbsp;// ... rest of config<br>
+                };
+                </code>
+            </div>
+            
+            <p><strong>Benefits:</strong></p>
+            <ul style="margin-left: 1.5rem; margin-top: 1rem;">
+                <li>✅ Bypasses Android network security restrictions</li>
+                <li>✅ Uses HTTPS (allowed by default on Android)</li>
+                <li>✅ Works on any network without local restrictions</li>
+                <li>✅ More secure than direct HTTP connections</li>
+            </ul>
+        </div>
+        
+        <div class="footer">
+            <p>ESP32 Proxy Service • Deployed on Vercel</p>
+        </div>
+    </div>
+
+    <script>
+        let isConnected = false;
+        
+        // Check initial connection status
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/esp32/status');
+                if (response.ok) {
+                    isConnected = true;
+                    document.getElementById('status').textContent = '🟢 Connected to ESP32';
+                    document.getElementById('status').className = 'status online';
+                    document.getElementById('proxy-status').textContent = 'Connected';
+                } else {
+                    throw new Error('Connection failed');
+                }
+            } catch (error) {
+                isConnected = false;
+                document.getElementById('status').textContent = '🔴 ESP32 Unreachable';
+                document.getElementById('status').className = 'status offline';
+                document.getElementById('proxy-status').textContent = 'Disconnected';
+            }
+        }
+        
+        // Test connection to specific endpoint
+        async function testConnection(endpoint, method = 'GET', body = null) {
+            const responseDiv = document.getElementById('response');
+            const buttons = document.querySelectorAll('.test-button');
+            
+            // Disable all buttons
+            buttons.forEach(btn => btn.disabled = true);
+            
+            responseDiv.style.display = 'block';
+            responseDiv.textContent = 'Testing connection...';
+            
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+                
+                if (body && (method === 'POST' || method === 'PUT')) {
+                    options.body = JSON.stringify(body);
+                }
+                
+                const response = await fetch(`/api/esp32/${endpoint}`, options);
+                const data = await response.text();
+                
+                let responseText = `Status: ${response.status} ${response.statusText}\n`;
+                responseText += `Endpoint: ${method} /api/esp32/${endpoint}\n`;
+                responseText += `Response:\n${data}`;
+                
+                responseDiv.textContent = responseText;
+                
+                if (response.ok) {
+                    responseDiv.style.borderLeft = '4px solid #48bb78';
+                } else {
+                    responseDiv.style.borderLeft = '4px solid #f56565';
+                }
+                
+            } catch (error) {
+                responseDiv.textContent = `Error: ${error.message}`;
+                responseDiv.style.borderLeft = '4px solid #f56565';
+            } finally {
+                // Re-enable all buttons
+                buttons.forEach(btn => btn.disabled = false);
+            }
+        }
+        
+        // Initialize
+        checkStatus();
+        
+        // Check status every 30 seconds
+        setInterval(checkStatus, 30000);
+    </script>
+</body>
+</html>
